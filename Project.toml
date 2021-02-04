@@ -1,0 +1,13 @@
+name = "CachedCalls"
+uuid = "f8c5305c-6a45-4f66-b1f2-5751ba853d4a"
+authors = ["Miha Zgubic <miha.zgubic@invenialabs.co.uk> and contributors"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
