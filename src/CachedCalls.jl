@@ -61,6 +61,7 @@ function _deconstruct(ex)
     kwargs = _extract_kwargs(collect(fargs))
     return func, args, kwargs
 end
+
 """
     _extract_kwargs(callargs::AbstractArray{Any})
 
@@ -81,4 +82,5 @@ end
 function _extract_kwargs(a::AbstractArray; keep=false)
     return [(_extract_kwargs.(a)...)...]
 end
+
 end
