@@ -7,23 +7,23 @@ using Test
         @testset "f(1, 2, c)" begin
             ex = :(f(1, 2, c))
             func, args, kwargs = CachedCalls._deconstruct(ex)
-            @test func = :f
-            @test args = Any[1, 2, :c]
-            @test kwargs = Any[]
+            @test func == :f
+            @test args == Any[1, 2, :c]
+            @test kwargs == Any[]
         end
 
         @testset "f(;a=1, b=2, c)" begin
             ex = :(f(; a=1, b=2, c))
             func, args, kwargs = CachedCalls._deconstruct(ex)
-            @test func = :f
-            @test args = Any[]
-            @test kwargs = Tuple{Symbol,Any}[(:a, 1), (:b, 2), (:c, :c)]
+            @test func == :f
+            @test args == Any[]
+            @test kwargs == Tuple{Symbol,Any}[(:a, 1), (:b, 2), (:c, :c)]
         end
     end
 
     @testset "_extract_kwargs" begin
         @test CachedCalls._extract_kwargs(:a) == []
-        @test CachedCalls._extract_kwargs(:a; keep=true) == [(:a, :a)]
+        @test CachedCalls._extract_kwargs(:a; keep_args=true) == [(:a, :a)]
         @test CachedCalls._extract_kwargs(Expr(:kw, :a, 1)) == [(:a, 1),]
         @test CachedCalls._extract_kwargs(Expr(:kw, :a, :variable)) == [(:a, :variable),]
 
