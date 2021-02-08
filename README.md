@@ -28,3 +28,4 @@ The second time the macro is used the inputs/globals will not be mutated.
 - The inputs to the macro are considered the same if their hashes are the same.
 
 Notably, `hash(1) == hash(1.0)`, and similarly for `DataFrame`s that differ only by column names.
+Additionally, function arguments are differentiated by name only.
