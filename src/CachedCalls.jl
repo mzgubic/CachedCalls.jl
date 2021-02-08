@@ -63,23 +63,27 @@ function _deconstruct(ex)
 end
 
 """
-    _extract_kwargs(callargs::AbstractArray{Any})
+    _extract_kwargs(callargs::AbstractArray{Any}; keep_args=false)
 
 Extract a tuple of (:kwarg_name, value) from :call expression args.
 """
-function _extract_kwargs(x; keep=false)
-    return keep ? [(x, x)] : []
+function _extract_kwargs(x; keep_args=false)
+    return keep_args ? [(x, x)] : []
 end
-function _extract_kwargs(ex::Expr; keep=false)
+function _extract_kwargs(ex::Expr; keep_args=false)
+    # kwargs specified without ;
     if Meta.isexpr(ex, :kw)
         return [(ex.args[1], ex.args[2]),]
+    # kwargs specified with ;
     elseif Meta.isexpr(ex, :parameters)
-        return [(_extract_kwargs.(ex.args; keep=true)...)...]
+        # need to `keep_args` because of `f(;c)` syntactic sugar does not result in :kw
+        # expression but in a single arg :c to parameters
+        return [(_extract_kwargs.(ex.args; keep_args=true)...)...]
     else
         error("Unexpected input expression to _extract_kwargs: $ex")
     end
 end
-function _extract_kwargs(a::AbstractArray; keep=false)
+function _extract_kwargs(a::AbstractArray; keep_args=false)
     return [(_extract_kwargs.(a)...)...]
 end
 
