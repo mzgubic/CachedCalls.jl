@@ -4,10 +4,10 @@ using FilePathsBase
 using FilePathsBase: /
 using JLSO
 
-const CACHEDCALLS_DIR = home() / ".cachedcalls"
-isdir(CACHEDCALLS_DIR) || mkdir(CACHEDCALLS_DIR)
-
 export @cached_call
+export cachedcalls_dir
+
+const CACHEDCALLS_PATH = Ref{PosixPath}()
 
 """
     @cached_call f(args; kwargs)
@@ -37,7 +37,7 @@ macro cached_call(ex)
             $(kw_names)..., # kwarg names
             $(esc.(kw_values)...) # kwarg values
         ])
-        fname = $(CACHEDCALLS_DIR) / "$(h).jlso"
+        fname = $(cachedcalls_dir()) / "$(h).jlso"
         if isfile(fname)
             return JLSO.load(fname)[:res]
         else
@@ -46,6 +46,33 @@ macro cached_call(ex)
             return res
         end
     end
+end
+
+"""
+    cachedcalls_dir()
+
+Retrieves the path to where the cached files are stored.
+"""
+function cachedcalls_dir()
+    if !isassigned(CACHEDCALLS_PATH)
+        CACHEDCALLS_PATH[] = home() / ".cachedcalls"
+    end
+
+    isdir(CACHEDCALLS_PATH[]) || mkdir(CACHEDCALLS_PATH[])
+
+    return CACHEDCALLS_PATH[]
+end
+
+"""
+    cachedcalls_dir(p::Union{String, PosixPath})
+
+Sets the path to where the cached files are stored to `p`.
+"""
+function cachedcalls_dir(p::PosixPath)
+    CACHEDCALLS_PATH[] = p
+end
+function cachedcalls_dir(p::String)
+    CACHEDCALLS_PATH[] = PosixPath(p)
 end
 
 """
@@ -70,6 +97,7 @@ Extract a tuple of (:kwarg_name, value) from :call expression args.
 function _extract_kwargs(x; keep_args=false)
     return keep_args ? [(x, x)] : []
 end
+
 function _extract_kwargs(ex::Expr; keep_args=false)
     # kwargs specified without ;
     if Meta.isexpr(ex, :kw)
@@ -83,6 +111,7 @@ function _extract_kwargs(ex::Expr; keep_args=false)
         error("Unexpected input expression to _extract_kwargs: $ex")
     end
 end
+
 function _extract_kwargs(a::AbstractArray; keep_args=false)
     return [(_extract_kwargs.(a)...)...]
 end
