@@ -7,11 +7,11 @@
 Functions that take a long time to run can slow down experimentation and code development.
 Instead of running the same function with the same inputs multiple times, the result can be cached to disk and fetched when the function is run with the same arguments again.
 A simple macro provides this functionality:
+
 ```julia
 using CachedCalls
 
 @cached_call f(args; kwargs)
-```
 It works by hashing the macro name, values of arguments, and names and values of keyword arguments.
 
 ## Gotchas
