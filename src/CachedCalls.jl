@@ -55,7 +55,7 @@ Retrieves the path to where the cached files are stored.
 """
 function cachedcalls_dir()
     if !isassigned(CACHEDCALLS_PATH)
-        CACHEDCALLS_PATH[] = home() / ".cachedcalls"
+        CACHEDCALLS_PATH[] = PosixPath(first(Base.DEPOT_PATH)) / ".cachedcalls"
     end
 
     isdir(CACHEDCALLS_PATH[]) || mkdir(CACHEDCALLS_PATH[])
