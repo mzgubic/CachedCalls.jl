@@ -58,10 +58,12 @@ using Test
             call1 = @cached_call f(;kw=1)
             call2 = @cached_call f(kw=1)
             kw = 1
-            if VERSION >= v"1.5"
+            @static if VERSION >= v"1.5"
+                println("hi2")
                 call3 = @cached_call f(;kw)
                 @test f(;kw=1) == call1 == call2 == call3
             else
+                println("hi")
                 @test f(;kw=1) == call1 == call2
             end
         end
@@ -71,13 +73,12 @@ using Test
             a = 2.0
             kw = 1
             call1 = @cached_call f(a; kw=1)
-            if VERSION >= v"1.5"
+            @static if VERSION >= v"1.5"
                 call2 = @cached_call f(a; kw)
                 @test f(a; kw=1) == call1 == call2
             else
                 @test f(a; kw=1) == call1
             end
         end
-
     end
 end
