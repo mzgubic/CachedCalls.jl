@@ -2,7 +2,6 @@ using CachedCalls
 using Test
 
 @testset "CachedCalls.jl" begin
-
     @testset "_deconstruct" begin
         @testset "f(1, 2, c)" begin
             ex = :(f(1, 2, c))
@@ -39,6 +38,13 @@ using Test
         @testset "f(;a=1, b=2, c)" begin
             fargs = Any[:($(Expr(:parameters, :($(Expr(:kw, :a, 1))), :($(Expr(:kw, :b, 2))), :c)))]
             @test CachedCalls._extract_kwargs(fargs) == [(:a, 1), (:b, 2), (:c, :c)]
+        end
+    end
+
+    @testset "@cached_call" begin
+        @testset "f()" begin
+            no_args() = 2
+            @test no_args() == @cached_call no_args() == @cached_call no_args()
         end
     end
 end
