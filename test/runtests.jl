@@ -62,7 +62,7 @@ using Test
                 call3 = @cached_call f(;kw)
                 @test f(;kw=1) == call1 == call2 == call3
             else
-                @test f(;kw=1) == call1 == call2 == call3
+                @test f(;kw=1) == call1 == call2
             end
         end
 
