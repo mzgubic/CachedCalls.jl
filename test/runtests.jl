@@ -43,8 +43,33 @@ using Test
 
     @testset "@cached_call" begin
         @testset "f()" begin
-            no_args() = 2
-            @test no_args() == @cached_call no_args() == @cached_call no_args()
+            f() = 2
+            @test f() == @cached_call(f()) == @cached_call f() # test first and second call
         end
+
+        @testset "f(a, b)" begin
+            f(a, b) = a + b
+            @test f(1, 2) == @cached_call f(1, 2)
+            @test f(1, 2) != @cached_call f(2, 2)
+        end
+
+        @testset "f(;kw=kw)" begin
+            f(;kw=1) = kw
+            call1 = @cached_call f(;kw=1)
+            call2 = @cached_call f(kw=1)
+            kw = 1
+            call3 = @cached_call f(;kw)
+            @test f(;kw=1) == call1 == call2 == call3
+        end
+
+        @testset "f(;kw=kw)" begin
+            f(a; kw=1) = a - kw
+            a = 2.0
+            kw = 1
+            call1 = @cached_call f(a; kw=1)
+            call2 = @cached_call f(a; kw)
+            @test f(a; kw=1) == call1 == call2
+        end
+
     end
 end
