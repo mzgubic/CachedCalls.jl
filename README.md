@@ -11,7 +11,7 @@ A simple macro provides this functionality:
 ```julia
 using CachedCalls
 
-raw_data = @cached_call f(args; kwargs)
+variable = @cached_call f(args; kwargs)
 ```
 
 It works by hashing the macro name, values of arguments, and names and values of keyword arguments.
