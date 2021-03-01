@@ -6,7 +6,7 @@ using Test
         @testset "f(1, 2, c)" begin
             ex = :(f(1, 2, c))
             func, args, kwargs = CachedCalls._deconstruct(ex)
-            @test func == :f
+            @test func == "f"
             @test args == Any[1, 2, :c]
             @test kwargs == Any[]
         end
@@ -14,7 +14,7 @@ using Test
         @testset "f(;a=1, b=2, c)" begin
             ex = :(f(; a=1, b=2, c))
             func, args, kwargs = CachedCalls._deconstruct(ex)
-            @test func == :f
+            @test func == "f"
             @test args == Any[]
             @test kwargs == Tuple{Symbol,Any}[(:a, 1), (:b, 2), (:c, :c)]
         end

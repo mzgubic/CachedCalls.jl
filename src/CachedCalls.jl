@@ -4,7 +4,7 @@ using FilePathsBase
 using FilePathsBase: /
 using JLSO
 
-export @cached_call
+export @cached_call, @hash_call
 export cachedcalls_dir
 
 const CACHEDCALLS_PATH = Ref{PosixPath}()
@@ -24,19 +24,9 @@ Functions are differentiated by name only, meaning that changing the definition 
 rerunning `@cached_call` will return the wrong result.
 """
 macro cached_call(ex)
-    Meta.isexpr(ex, :call) || error("Invalid use of `@cached_call`")
-
-    func, args, kwargs = _deconstruct(ex)
-    kw_names = first.(kwargs)
-    kw_values = last.(kwargs)
-
     return quote
-        h = hash([
-            $(esc(func)), # function name
-            $(esc.(args)...), # arg values
-            $(kw_names)..., # kwarg names
-            $(esc.(kw_values)...) # kwarg values
-        ])
+        h = @hash_call $(esc(ex))
+
         fname = $(cachedcalls_dir()) / "$(h).jlso"
         if isfile(fname)
             res = JLSO.load(fname)[:res]
@@ -46,6 +36,40 @@ macro cached_call(ex)
         end
         res
     end
+end
+
+macro hash_call(ex)
+
+    # escaped expressions need their unescaped subexpression deconstructed
+    isesc = Meta.isexpr(ex, :escape)
+    if isesc
+        nonesc_ex = ex.args[1]
+    else
+        nonesc_ex = ex
+    end
+
+    # check assumptions about the call
+    Meta.isexpr(nonesc_ex, :call) || error("Only :call expressions are supported, $ex was given.")
+
+    # Extract arguments, kwarg names, and kwarg values.
+    # If the original expression was escaped, we have extracted the non-escaped expression
+    # to deconstruct, and must escape the indvidual expression components instead.
+    func, args, kwargs = _deconstruct(nonesc_ex)
+    kw_names = first.(kwargs)
+    kw_values = last.(kwargs)
+    if isesc
+        args = esc.(args)
+        kw_values = esc.(kw_values)
+    end
+
+    return :(
+        hash([
+            $(func), # function name
+            $(esc.(args)...), # arg values
+            $(kw_names)..., # kwarg names
+            $(esc.(kw_values)...) # kwarg values
+        ])
+    )
 end
 
 """
@@ -82,11 +106,11 @@ Deconstruct expression `ex` to a tuple of function name, arguments, and keyword 
 """
 function _deconstruct(ex)
     func, fargs = Iterators.peel(ex.args)
-    length(ex.args) == 1 && return func, [], []
+    length(ex.args) == 1 && return string(func), [], []
 
     args = filter(subex -> !Meta.isexpr(subex, [:kw, :parameters]), collect(fargs))
     kwargs = _extract_kwargs(collect(fargs))
-    return func, args, kwargs
+    return string(func), args, kwargs
 end
 
 """
