@@ -1,14 +1,14 @@
 name = "CachedCalls"
 uuid = "f8c5305c-6a45-4f66-b1f2-5751ba853d4a"
 authors = ["Miha Zgubic <miha.zgubic@invenialabs.co.uk> and contributors"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 FilePathsBase = "48062228-2e41-5def-b9a4-89aafe57970f"
 JLSO = "9da8a3cd-07a3-59c0-a743-3fdc52c30d11"
 
 [compat]
-FilePathsBase = "0.9"
+FilePathsBase = "0.8, 0.9"
 JLSO = "2"
 julia = "1"
 

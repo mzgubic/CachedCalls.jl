@@ -39,12 +39,12 @@ macro cached_call(ex)
         ])
         fname = $(cachedcalls_dir()) / "$(h).jlso"
         if isfile(fname)
-            return JLSO.load(fname)[:res]
+            res = JLSO.load(fname)[:res]
         else
             res = $(esc(ex))
             JLSO.save(fname, :res => res)
-            return res
         end
+        res
     end
 end
 
