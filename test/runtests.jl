@@ -59,11 +59,9 @@ using Test
             call2 = @cached_call f(kw=1)
             kw = 1
             @static if VERSION >= v"1.5"
-                println("hi2")
                 call3 = @cached_call f(;kw)
                 @test f(;kw=1) == call1 == call2 == call3
             else
-                println("hi")
                 @test f(;kw=1) == call1 == call2
             end
         end
@@ -72,13 +70,27 @@ using Test
             f(a; kw=1) = a - kw
             a = 2.0
             kw = 1
-            call1 = @cached_call f(a; kw=1)
+            call1 = @cached_call f(a; kw=kw)
             @static if VERSION >= v"1.5"
                 call2 = @cached_call f(a; kw)
-                @test f(a; kw=1) == call1 == call2
+                @test f(a; kw=kw) == call1 == call2
             else
-                @test f(a; kw=1) == call1
+                @test f(a; kw=kw) == call1
             end
+        end
+
+        @testset "dot access" begin
+            f(a; kw=0) = a + kw
+            nt = (one=1, two=2)
+            @test f(1, kw=2) == @cached_call f(nt.one; kw=nt.two)
+            @test f(1, kw=2) == @cached_call f(nt.one, kw=nt.two)
+        end
+
+        @testset "square bracket access" begin
+            f(a; kw=0) = a + kw
+            array = [1, 2, 3]
+            @test f(1, kw=2) == @cached_call f(array[1]; kw=array[2])
+            @test f(1, kw=2) == @cached_call f(array[1], kw=array[2])
         end
     end
 end
