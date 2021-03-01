@@ -88,9 +88,17 @@ using Test
 
         @testset "square bracket access" begin
             f(a; kw=0) = a + kw
+
             array = [1, 2, 3]
-            @test f(1, kw=2) == @cached_call f(array[1]; kw=array[2])
-            @test f(1, kw=2) == @cached_call f(array[1], kw=array[2])
+            call1 = @cached_call f(array[1]; kw=array[2])
+            call2 = @cached_call f(array[1], kw=array[2])
+            @test f(1, kw=2) == call1 == call2
+
+            array = [10, 20, 30]
+            call3 = @cached_call f(array[1]; kw=array[2])
+            call4 = @cached_call f(array[1], kw=array[2])
+            @test call1 != call3
+            @test call2 != call4
         end
     end
 end
