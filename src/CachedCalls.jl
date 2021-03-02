@@ -39,7 +39,6 @@ macro cached_call(ex)
 end
 
 macro hash_call(ex)
-
     # escaped expressions need their unescaped subexpression deconstructed
     isesc = Meta.isexpr(ex, :escape)
     if isesc
@@ -62,14 +61,12 @@ macro hash_call(ex)
         kw_values = esc.(kw_values)
     end
 
-    return :(
-        hash([
-            $(func), # function name
-            $(esc.(args)...), # arg values
-            $(kw_names)..., # kwarg names
-            $(esc.(kw_values)...) # kwarg values
-        ])
-    )
+    return :(hash([
+        $(func), # function name
+        $(esc.(args)...), # arg values
+        $(kw_names)..., # kwarg names
+        $(esc.(kw_values)...) # kwarg values
+    ]))
 end
 
 """
