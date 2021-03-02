@@ -42,7 +42,7 @@ macro hash_call(ex)
     func, args, kw_names, kw_values = _deconstruct(ex)
 
     return :(hash([
-        $(func), # function name
+        $(esc(func)), # function name
         $(esc.(args)...), # arg values
         $(kw_names)..., # kwarg names
         $(esc.(kw_values)...) # kwarg values
@@ -95,7 +95,6 @@ function _deconstruct(ex)
 
     # Extract arguments, kwarg names, and kwarg values.
     func, fargs = Iterators.peel(nonesc_ex.args)
-    length(nonesc_ex.args) == 1 && return string(func), [], [], []
 
     args = filter(subex -> !Meta.isexpr(subex, [:kw, :parameters]), collect(fargs))
     kwargs = _extract_kwargs(collect(fargs))
@@ -107,9 +106,10 @@ function _deconstruct(ex)
     if isesc
         args = esc.(args)
         kw_values = esc.(kw_values)
+        func = esc(func)
     end
 
-    return string(func), args, kw_names, kw_values
+    return func, args, kw_names, kw_values
 end
 
 """
