@@ -94,11 +94,7 @@ Deconstruct expression `ex` to a tuple (function name, arguments, kwarg names, k
 function _deconstruct(ex)
     # escaped expressions need their unescaped subexpression deconstructed
     isesc = Meta.isexpr(ex, :escape)
-    if isesc
-        nonesc_ex = ex.args[1]
-    else
-        nonesc_ex = ex
-    end
+    nonesc_ex = isesc ? ex.args[1] : ex
 
     # check assumptions about the call
     Meta.isexpr(nonesc_ex, :call) || error("Only :call expressions are supported, $ex was given.")
