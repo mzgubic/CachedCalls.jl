@@ -14,7 +14,7 @@ const CACHEDCALLS_PATH = Ref{PosixPath}()
 
 Caches the result of `f(args; kwargs)` to disk and returns the result. The next time
 `f(args; kwargs)` is called with the same values of `args` and `kwargs` the cached result
-is returned and `f` is not called again.
+is returned and `f` is not called again. Splatting it not yet supported.
 
 Restrictions on `f` apply: it must not mutate its arguments or access/mutate globals.
 These assumptions will not be checked and if violated could mean that an incorrect
@@ -38,6 +38,16 @@ macro cached_call(ex)
     end
 end
 
+"""
+    @hash_call f(args; kwargs)
+
+Computes the hash of the function call `f(args; kwargs)` by hashing `f`, the values of
+`args`, the names of `kwargs`, and the values of `kwargs`.
+
+Different order of kwargs will hash differently. Setting the default values of kwargs
+explicitly will hash differently than using the defaults implicitly. Splatting it not yet
+supported.
+"""
 macro hash_call(ex)
     func, args, kw_names, kw_values = _deconstruct(ex)
 
