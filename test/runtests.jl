@@ -6,7 +6,7 @@ using Test
         @testset "f(1, 2, c)" begin
             ex = :(f(1, 2, c))
             func, args, kw_names, kw_values = CachedCalls._deconstruct(ex)
-            @test func == "f"
+            @test func == :f
             @test args == Any[1, 2, :c]
             @test kw_names == Any[]
             @test kw_values == Any[]
@@ -15,7 +15,7 @@ using Test
         @testset "f(;a=1, b=2, c)" begin
             ex = :(f(; a=1, b=2, c))
             func, args, kw_names, kw_values = CachedCalls._deconstruct(ex)
-            @test func == "f"
+            @test func == :f
             @test args == Any[]
             @test kw_names == [:a, :b, :c]
             @test kw_values == [1, 2, :c]
