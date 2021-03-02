@@ -79,7 +79,7 @@ end
 """
     _deconstruct(ex)
 
-Deconstruct expression `ex` to a tuple of function name, arguments, and keyword arguments.
+Deconstruct expression `ex` to a tuple (function name, arguments, kwarg names, kwarg values)
 """
 function _deconstruct(ex)
     # escaped expressions need their unescaped subexpression deconstructed
@@ -125,14 +125,17 @@ function _extract_kwargs(ex::Expr; keep_args=false)
     # kwargs specified without ;
     if Meta.isexpr(ex, :kw)
         return [(ex.args[1], ex.args[2]),]
+
     # kwargs specified with ;
     elseif Meta.isexpr(ex, :parameters)
         # need to `keep_args` because of `f(;c)` syntactic sugar does not result in :kw
         # expression but in a single arg :c to parameters
         return [(_extract_kwargs.(ex.args; keep_args=true)...)...]
+
     # container.key or container[index] access
     elseif Meta.isexpr(ex, [:., :ref])
         return keep_args ? [(ex, ex)] : []
+
     else
         error("Unexpected input expression to _extract_kwargs: $ex")
     end
