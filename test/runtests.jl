@@ -80,7 +80,7 @@ using Test
             end
         end
 
-        @testset "f(;kw=kw)" begin
+        @testset "f(a ;kw=kw)" begin
             f(a; kw=1) = a - kw
             a = 2.0
             kw = 1
