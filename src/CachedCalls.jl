@@ -39,27 +39,7 @@ macro cached_call(ex)
 end
 
 macro hash_call(ex)
-    # escaped expressions need their unescaped subexpression deconstructed
-    isesc = Meta.isexpr(ex, :escape)
-    if isesc
-        nonesc_ex = ex.args[1]
-    else
-        nonesc_ex = ex
-    end
-
-    # check assumptions about the call
-    Meta.isexpr(nonesc_ex, :call) || error("Only :call expressions are supported, $ex was given.")
-
-    # Extract arguments, kwarg names, and kwarg values.
-    # If the original expression was escaped, we have extracted the non-escaped expression
-    # to deconstruct, and must escape the indvidual expression components instead.
-    func, args, kwargs = _deconstruct(nonesc_ex)
-    kw_names = first.(kwargs)
-    kw_values = last.(kwargs)
-    if isesc
-        args = esc.(args)
-        kw_values = esc.(kw_values)
-    end
+    func, args, kw_names, kw_values = _deconstruct(ex)
 
     return :(hash([
         $(func), # function name
@@ -102,12 +82,34 @@ end
 Deconstruct expression `ex` to a tuple of function name, arguments, and keyword arguments.
 """
 function _deconstruct(ex)
-    func, fargs = Iterators.peel(ex.args)
-    length(ex.args) == 1 && return string(func), [], []
+    # escaped expressions need their unescaped subexpression deconstructed
+    isesc = Meta.isexpr(ex, :escape)
+    if isesc
+        nonesc_ex = ex.args[1]
+    else
+        nonesc_ex = ex
+    end
+
+    # check assumptions about the call
+    Meta.isexpr(nonesc_ex, :call) || error("Only :call expressions are supported, $ex was given.")
+
+    # Extract arguments, kwarg names, and kwarg values.
+    func, fargs = Iterators.peel(nonesc_ex.args)
+    length(nonesc_ex.args) == 1 && return string(func), [], [], []
 
     args = filter(subex -> !Meta.isexpr(subex, [:kw, :parameters]), collect(fargs))
     kwargs = _extract_kwargs(collect(fargs))
-    return string(func), args, kwargs
+    kw_names = first.(kwargs)
+    kw_values = last.(kwargs)
+
+    # If the original expression was escaped, we have extracted the non-escaped expression
+    # to deconstruct, and must escape the indvidual expression components instead.
+    if isesc
+        args = esc.(args)
+        kw_values = esc.(kw_values)
+    end
+
+    return string(func), args, kw_names, kw_values
 end
 
 """
