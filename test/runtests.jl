@@ -5,18 +5,20 @@ using Test
     @testset "_deconstruct" begin
         @testset "f(1, 2, c)" begin
             ex = :(f(1, 2, c))
-            func, args, kwargs = CachedCalls._deconstruct(ex)
+            func, args, kw_names, kw_values = CachedCalls._deconstruct(ex)
             @test func == :f
             @test args == Any[1, 2, :c]
-            @test kwargs == Any[]
+            @test kw_names == Any[]
+            @test kw_values == Any[]
         end
 
         @testset "f(;a=1, b=2, c)" begin
             ex = :(f(; a=1, b=2, c))
-            func, args, kwargs = CachedCalls._deconstruct(ex)
+            func, args, kw_names, kw_values = CachedCalls._deconstruct(ex)
             @test func == :f
             @test args == Any[]
-            @test kwargs == Tuple{Symbol,Any}[(:a, 1), (:b, 2), (:c, :c)]
+            @test kw_names == [:a, :b, :c]
+            @test kw_values == [1, 2, :c]
         end
     end
 
@@ -41,16 +43,23 @@ using Test
         end
     end
 
-    @testset "@cached_call" begin
+    @testset "@cached_call and @hash_call" begin
         @testset "f()" begin
             f() = 2
-            @test f() == @cached_call(f()) == @cached_call f() # test first and second call
+            call1 = @cached_call f()
+            call2 = @cached_call f()
+            @test f() == call1 == call2
+
+            @test @hash_call(f()) isa UInt
         end
 
         @testset "f(a, b)" begin
             f(a, b) = a + b
-            @test f(1, 2) == @cached_call f(1, 2)
-            @test f(1, 2) != @cached_call f(2, 2)
+            a = 1
+            @test f(a, 2) == @cached_call f(a, 2)
+            @test f(a, 2) != @cached_call f(2, 2)
+
+            @test @hash_call(f(a, 2)) isa UInt
         end
 
         @testset "f(;kw=kw)" begin
@@ -58,25 +67,25 @@ using Test
             call1 = @cached_call f(;kw=1)
             call2 = @cached_call f(kw=1)
             kw = 1
+
+            @test @hash_call(f(;kw=1)) isa UInt
+            @test @hash_call(f(kw=1)) isa UInt
+
             @static if VERSION >= v"1.5"
                 call3 = @cached_call f(;kw)
                 @test f(;kw=1) == call1 == call2 == call3
+                @test @hash_call(f(;kw)) isa UInt
             else
                 @test f(;kw=1) == call1 == call2
             end
         end
 
-        @testset "f(;kw=kw)" begin
+        @testset "f(a ;kw=kw)" begin
             f(a; kw=1) = a - kw
             a = 2.0
             kw = 1
-            call1 = @cached_call f(a; kw=kw)
-            @static if VERSION >= v"1.5"
-                call2 = @cached_call f(a; kw)
-                @test f(a; kw=kw) == call1 == call2
-            else
-                @test f(a; kw=kw) == call1
-            end
+            @test f(a; kw=kw) == @cached_call f(a; kw=kw)
+            @test @hash_call(f(a; kw=kw)) isa UInt
         end
 
         @testset "dot access" begin
@@ -84,6 +93,7 @@ using Test
             nt = (one=1, two=2)
             @test f(1, kw=2) == @cached_call f(nt.one; kw=nt.two)
             @test f(1, kw=2) == @cached_call f(nt.one, kw=nt.two)
+            @test @hash_call(f(nt.one; kw=nt.two)) isa UInt
         end
 
         @testset "square bracket access" begin
@@ -93,6 +103,7 @@ using Test
             call1 = @cached_call f(array[1]; kw=array[2])
             call2 = @cached_call f(array[1], kw=array[2])
             @test f(1, kw=2) == call1 == call2
+            @test @hash_call(f(array[1], kw=array[2])) isa UInt
 
             array = [10, 20, 30]
             call3 = @cached_call f(array[1]; kw=array[2])

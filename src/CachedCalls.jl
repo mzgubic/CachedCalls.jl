@@ -4,7 +4,7 @@ using FilePathsBase
 using FilePathsBase: /
 using JLSO
 
-export @cached_call
+export @cached_call, @hash_call
 export cachedcalls_dir
 
 const CACHEDCALLS_PATH = Ref{PosixPath}()
@@ -14,7 +14,7 @@ const CACHEDCALLS_PATH = Ref{PosixPath}()
 
 Caches the result of `f(args; kwargs)` to disk and returns the result. The next time
 `f(args; kwargs)` is called with the same values of `args` and `kwargs` the cached result
-is returned and `f` is not called again.
+is returned and `f` is not called again. Splatting is not yet supported.
 
 Restrictions on `f` apply: it must not mutate its arguments or access/mutate globals.
 These assumptions will not be checked and if violated could mean that an incorrect
@@ -24,19 +24,9 @@ Functions are differentiated by name only, meaning that changing the definition 
 rerunning `@cached_call` will return the wrong result.
 """
 macro cached_call(ex)
-    Meta.isexpr(ex, :call) || error("Invalid use of `@cached_call`")
-
-    func, args, kwargs = _deconstruct(ex)
-    kw_names = first.(kwargs)
-    kw_values = last.(kwargs)
-
     return quote
-        h = hash([
-            $(esc(func)), # function name
-            $(esc.(args)...), # arg values
-            $(kw_names)..., # kwarg names
-            $(esc.(kw_values)...) # kwarg values
-        ])
+        h = @hash_call $(esc(ex))
+
         fname = $(cachedcalls_dir()) / "$(h).jlso"
         if isfile(fname)
             res = JLSO.load(fname)[:res]
@@ -46,6 +36,27 @@ macro cached_call(ex)
         end
         res
     end
+end
+
+"""
+    @hash_call f(args; kwargs)
+
+Computes the hash of the function call `f(args; kwargs)` by hashing `f`, the values of
+`args`, the names of `kwargs`, and the values of `kwargs`.
+
+Different order of kwargs will hash differently. Setting the default values of kwargs
+explicitly will hash differently than using the defaults implicitly. Splatting is not yet
+supported.
+"""
+macro hash_call(ex)
+    func, args, kw_names, kw_values = _deconstruct(ex)
+
+    return :(hash([
+        $(esc(func)), # function name
+        $(esc.(args)...), # arg values
+        $(kw_names)..., # kwarg names
+        $(esc.(kw_values)...) # kwarg values
+    ]))
 end
 
 """
@@ -78,15 +89,33 @@ end
 """
     _deconstruct(ex)
 
-Deconstruct expression `ex` to a tuple of function name, arguments, and keyword arguments.
+Deconstruct expression `ex` to a tuple (function name, arguments, kwarg names, kwarg values)
 """
 function _deconstruct(ex)
-    func, fargs = Iterators.peel(ex.args)
-    length(ex.args) == 1 && return func, [], []
+    # escaped expressions need their unescaped subexpression deconstructed
+    isesc = Meta.isexpr(ex, :escape)
+    nonesc_ex = isesc ? ex.args[1] : ex
+
+    # check assumptions about the call
+    Meta.isexpr(nonesc_ex, :call) || error("Only :call expressions are supported, $ex was given.")
+
+    # Extract arguments, kwarg names, and kwarg values.
+    func, fargs = Iterators.peel(nonesc_ex.args)
 
     args = filter(subex -> !Meta.isexpr(subex, [:kw, :parameters]), collect(fargs))
     kwargs = _extract_kwargs(collect(fargs))
-    return func, args, kwargs
+    kw_names = first.(kwargs)
+    kw_values = last.(kwargs)
+
+    # If the original expression was escaped, we have extracted the non-escaped expression
+    # to deconstruct, and must escape the indvidual expression components instead.
+    if isesc
+        args = esc.(args)
+        kw_values = esc.(kw_values)
+        func = esc(func)
+    end
+
+    return func, args, kw_names, kw_values
 end
 
 """
@@ -102,14 +131,17 @@ function _extract_kwargs(ex::Expr; keep_args=false)
     # kwargs specified without ;
     if Meta.isexpr(ex, :kw)
         return [(ex.args[1], ex.args[2]),]
+
     # kwargs specified with ;
     elseif Meta.isexpr(ex, :parameters)
         # need to `keep_args` because of `f(;c)` syntactic sugar does not result in :kw
         # expression but in a single arg :c to parameters
         return [(_extract_kwargs.(ex.args; keep_args=true)...)...]
+
     # container.key or container[index] access
     elseif Meta.isexpr(ex, [:., :ref])
         return keep_args ? [(ex, ex)] : []
+
     else
         error("Unexpected input expression to _extract_kwargs: $ex")
     end
