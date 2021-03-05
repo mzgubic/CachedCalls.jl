@@ -111,5 +111,53 @@ using Test
             @test call1 != call3
             @test call2 != call4
         end
+
+        @testset "splatting" begin
+            f(a, b; kw1=1, kw2=2) = a + b + kw1 + kw2
+
+            one = 1
+            a = [1, 2]
+            kw = (kw1=1, kw2=2)
+
+            @testset "basic splatting" begin
+                @test f(a...) == @cached_call f(a...)
+                @test f(a...) == @cached_call f([1, 2]...)
+                @test f(a...) == @cached_call f([one, 2]...)
+                @test f(a...; kw...) == @cached_call f(a...; kw...)
+                @test f(a...; kw...) == @cached_call f(a...; (kw1=1, kw2=2)...)
+                @test f(a...; kw...) == @cached_call f(a...; (kw1=one, kw2=2)...)
+
+                @test @hash_call(f(a...)) isa UInt
+                @test @hash_call(f([1, 2]...)) isa UInt
+                @test @hash_call(f([one, 2]...)) isa UInt
+                @test @hash_call(f(a...; kw...)) isa UInt
+                @test @hash_call(f(a...; (kw1=1, kw2=2)...)) isa UInt
+                @test @hash_call(f(a...; (kw1=one, kw2=2)...)) isa UInt
+            end
+
+            @testset "different containers" begin
+                call1 = @cached_call f(1, 2)
+                call2 = @cached_call f([1, 2]...)
+                call3 = @cached_call f((1, 2)...)
+                @test call1 == call2 == call3
+
+                @test @hash_call(f([1, 2]...)) isa UInt
+                @test @hash_call(f((1, 2)...)) isa UInt
+            end
+
+            @testset "make sure we hash splatted values (not variable names)" begin
+                a = [1, 2]
+                call4 = @cached_call f(a...)
+                a = [10, 20]
+                call5 = @cached_call f(a...)
+                @test call4 != call5
+
+                kw = (kw1=1, kw2=2)
+                call6 = @cached_call f(1, 2; kw...)
+                kw = (kw1=10, kw2=20)
+                call7 = @cached_call f(1, 2; kw...)
+                @test call6 != call7
+            end
+        end
     end
 end
