@@ -138,8 +138,9 @@ function _extract_kwargs(ex::Expr; keep_args=false)
         # expression but in a single arg :c to parameters
         return [(_extract_kwargs.(ex.args; keep_args=true)...)...]
 
-    # container.key or container[index] access
-    elseif Meta.isexpr(ex, [:., :ref])
+    # container.key, container[index] access, splatting
+    # (just pass it on)
+    elseif Meta.isexpr(ex, [:., :ref, :(...)])
         return keep_args ? [(ex, ex)] : []
 
     else
