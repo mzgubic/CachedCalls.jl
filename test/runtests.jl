@@ -43,6 +43,12 @@ using Test
         end
     end
 
+    # @cached_call calls the @hash_call macro under the hood, which means that most of the
+    # functionality is tested via @cached_call tests. However, the expression passed to
+    # @cached_call is escaped (macro hygiene) before being passed to @hash_call. Since
+    # @hash_call is exported we also want to test it parses non-escaped expressions
+    # correctly and can be used directly. This is why @hash_call only tests the type of the
+    # output (it tries to catch errors rather than failed tests)
     @testset "@cached_call and @hash_call" begin
         @testset "f()" begin
             f() = 2
